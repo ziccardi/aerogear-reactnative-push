@@ -1,4 +1,5 @@
 #import "RnUnifiedPush.h"
+#import "RNUnifiedPushEmitter.h"
 #import <AGDeviceRegistration.h>
 
 static NSData* _deviceToken;
@@ -10,10 +11,13 @@ static RCTResponseSenderBlock _messageHandler;
 
 RCT_EXPORT_MODULE()
 
-RCT_EXPORT_METHOD(sampleMethod:(NSString *)stringArgument numberParameter:(nonnull NSNumber *)numberArgument callback:(RCTResponseSenderBlock)callback)
-{
-    // TODO: Implement some actually useful functionality
-    callback(@[[NSString stringWithFormat: @"numberArgument: %@ stringArgument: %@", numberArgument, stringArgument]]);
+RCT_EXPORT_METHOD(initialize: (NSDictionary*)config onSuccess: (RCTResponseSenderBlock)callback) {
+  _config = config;
+  if (_deviceToken != nil) {
+    [RnUnifiedPush registerToUPS:callback];
+  } else {
+    _callback = callback;
+  }
 }
 
 + (void)didRegisterForRemoteNotificationsWithDeviceToken:(NSData *)deviceToken {
@@ -24,18 +28,7 @@ RCT_EXPORT_METHOD(sampleMethod:(NSString *)stringArgument numberParameter:(nonnu
 }
 
 + (void)didReceiveRemoteNotification:(NSDictionary *)userInfo {
-  if (_messageHandler != nil) {
-    _messageHandler(@[ userInfo[@"aps"][@"alert"][@"body"] ]);
-  }
-}
-
-RCT_EXPORT_METHOD(initialize: (NSDictionary*)config onSuccess: (RCTResponseSenderBlock)callback) {
-  _config = config;
-  if (_deviceToken != nil) {
-    [RnUnifiedPush registerToUPS:callback];
-  } else {
-    _callback = callback;
-  }
+  [RNUnifiedPushEmitter emitEvent:userInfo];
 }
 
 + (void)registerToUPS: (RCTResponseSenderBlock)callback {
@@ -44,7 +37,7 @@ RCT_EXPORT_METHOD(initialize: (NSDictionary*)config onSuccess: (RCTResponseSende
     [clientInfo setDeviceToken:_deviceToken];
     [clientInfo setVariantID:_config[@"variantId"]];
     [clientInfo setVariantSecret:_config[@"secret"]];
-    
+
     UIDevice *currentDevice = [UIDevice currentDevice];
     // set some 'useful' hardware information params
     [clientInfo setOperatingSystem:[currentDevice systemName]];
@@ -60,14 +53,5 @@ RCT_EXPORT_METHOD(initialize: (NSDictionary*)config onSuccess: (RCTResponseSende
     callback(@[err]);
   }];
 }
-
-RCT_EXPORT_METHOD(registerMessageHandler: (RCTResponseSenderBlock)callback) {
-  _messageHandler = callback;
-}
-
-RCT_EXPORT_METHOD(unregisterMessageHandler: (RCTResponseSenderBlock)callback) {
-  _messageHandler = nil;
-}
-
 
 @end
