@@ -31,7 +31,7 @@ RCT_EXPORT_METHOD(sampleMethod:(NSString *)stringArgument numberParameter:(nonnu
 
 RCT_EXPORT_METHOD(initialize: (NSDictionary*)config onSuccess: (RCTResponseSenderBlock)callback) {
   _config = config;
-  if (_config != nil) {
+  if (_deviceToken != nil) {
     [RnUnifiedPush registerToUPS:callback];
   } else {
     _callback = callback;
